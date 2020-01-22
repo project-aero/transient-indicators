@@ -14,18 +14,18 @@ library(tidyverse)
 ```
 
 ```
-## ── Attaching packages ────────────────────────────────── tidyverse 1.2.1 ──
+## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.0 ──
 ```
 
 ```
-## ✔ ggplot2 3.2.1     ✔ purrr   0.3.2
+## ✔ ggplot2 3.2.1     ✔ purrr   0.3.3
 ## ✔ tibble  2.1.3     ✔ dplyr   0.8.3
-## ✔ tidyr   0.8.3     ✔ stringr 1.4.0
+## ✔ tidyr   1.0.0     ✔ stringr 1.4.0
 ## ✔ readr   1.3.1     ✔ forcats 0.4.0
 ```
 
 ```
-## ── Conflicts ───────────────────────────────────── tidyverse_conflicts() ──
+## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
 ## ✖ dplyr::filter() masks stats::filter()
 ## ✖ dplyr::lag()    masks stats::lag()
 ```
@@ -97,7 +97,7 @@ tictoc::toc()
 ```
 
 ```
-## Emergence simulations: 187.615 sec elapsed
+## Emergence simulations: 185.332 sec elapsed
 ```
 
 ```r
@@ -119,7 +119,13 @@ foo <- simdata %>% group_by(.id, p, recovery) %>%
   mutate(lmod = purrr::map(simdf, linear_model)) %>%
   mutate(stat = purrr::map_dbl(lmod, react_stat)) %>%
   mutate(maxamp = purrr::map_dbl(simdf, max_amp))
+```
 
+```
+## Warning: `.key` is deprecated
+```
+
+```r
 foo %>% select(-lmod, -stat, -maxamp) %>% unnest(simdf) %>% 
   filter(.id < 4 & time < 0.75) %>%
   ggplot(aes(x = time, y = totcases, color = .id)) + geom_line() + 
@@ -284,7 +290,7 @@ tictoc::toc()
 ```
 
 ```
-## elimination simulations: 4388.879 sec elapsed
+## elimination simulations: 4171.077 sec elapsed
 ```
 
 ```r
@@ -343,7 +349,15 @@ tmp <- outsm %>%
   select(-smooth_mod) %>%
   unnest(simdf) %>% group_by(.id, window, pstep, recovery) %>%
   nest(.key = "simdf")
+```
 
+```
+## Warning: `.key` is deprecated
+
+## Warning: `.key` is deprecated
+```
+
+```r
 ## Checking smoothing span
 
 tmp %>% filter(.id == 1) %>% unnest(simdf) %>% 

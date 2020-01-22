@@ -11,5 +11,5 @@ generate such an image with podman version 1.6.2 on Ubuntu 19.10. An
 already built image has also been pushed to Docker Hub. The bash
 script `run-simulations.sh` could be used to run the R markdown
 notebook with that image using podman. The directory
-`example-output-2019-01-21` contains files produced by running that
-script. Producing them took about the 75 minutes using 8 2.1GHz cores.
+`example-output-2020-01-22` contains files produced by running that
+script. Producing them took about 75 minutes using 8 2.1GHz cores.
