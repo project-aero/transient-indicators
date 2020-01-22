@@ -59,10 +59,11 @@ gen_outbreak_sim <- function(R0 = 17, N_0 = 1e2, eta = 0, tstop = 2,
                    params = params, covar = covar)
 }
 
+Nequil <- 1e7
 nreplicates <- 1000
 pvec <- seq(0.95, 0.99, by = 0.01)
 tmpf <- function(x) {
-  gen_outbreak_sim(N_0 = 1e7, ifrac0 = 10 / 1e7, p = x)
+  gen_outbreak_sim(N_0 = Nequil, ifrac0 = 10 / 1e7, p = x)
 }
 
 simus <- list()
@@ -97,7 +98,7 @@ tictoc::toc()
 ```
 
 ```
-## Emergence simulations: 185.332 sec elapsed
+## Emergence simulations: 186.172 sec elapsed
 ```
 
 ```r
@@ -254,7 +255,7 @@ gen_wrap <- function(pstep, g = 326 / 13){
   tstop <- tdp2 + 4
   tstep <- 1 / 52
   gen_sim_step(tdp1 = tdp1, tdp2 = tdp2, p1 = 0.0, p2 = pstep, 
-               tstop = tstop, tstep = tstep, N_0 = 1e7, gamma = g)
+               tstop = tstop, tstep = tstep, N_0 = Nequil, gamma = g)
 }
 
 simus_end <- list()
@@ -290,7 +291,7 @@ tictoc::toc()
 ```
 
 ```
-## elimination simulations: 4171.077 sec elapsed
+## elimination simulations: 4134.628 sec elapsed
 ```
 
 ```r
@@ -325,7 +326,6 @@ m_t_calc <- function(df){
 time_of_pstep <- 20
 #These parameters do not need to be known to pick up trends in indicator. They are useful for checking that the smoothing in loess is appropriate though because they allow for our proxy for S to be directly compared to S.
 dt <- 1 / 52
-Nequil <- 1e7
 eta <- 17 / 1e6
 
 tmp <- outsm %>%  
@@ -475,7 +475,8 @@ sevf <- function(norm = 1){
   vec * norm
 }
 
-calc_dftraj <- function(init = c(0, 10), times = seq(0, 2, by = 1 / 52), ...){
+calc_dftraj <- function(init = c(0, 10), 
+                        times = seq(0, 2, by = 1 / 52), ...){
   J <- DiseaseFreeJacSIR(...)
   eigJ <- eigen(J)
   init_transformed <- solve(eigJ$vectors) %*% matrix(init, ncol = 1)
@@ -489,6 +490,8 @@ calc_dftraj <- function(init = c(0, 10), times = seq(0, 2, by = 1 / 52), ...){
 pem <- 82 / 85 # 16 / 17 + (2 / 5) * (1 / 17)
 evnorm <- 8
 traj_times <- seq(0, 20, by = 1 / 52)
+axis_line_size <- 0.8
+ev_line_size <- 2
 
 iev_targ <- ievf(p = pem, norm = evnorm)
 sev_targ <- sevf(norm = evnorm)
@@ -500,16 +503,21 @@ sevd <- cbind(data.frame(x1 = 0, y1 = 0),  sev_targ)
 
 traj <- calc_dftraj(times = traj_times, p = pem)
 
+equil <- EndemicEquilSIR(p = pem, gamma = 365 / 13, mu = 1 / 50, R0 = 17, 
+                         eta = 0)
+traj2 <- traj %>% mutate(Sorig = S + equil$S * Nequil, 
+                         Iorig = I + equil$I * Nequil)
+
 drawline <- function(df, ...){
   geom_segment(data = df, aes(x = x1, xend = x2, y = y1, yend = y2), 
                arrow = grid::arrow(), lineend = "round", ...)
 }
 
 p <- ggplot() + expand_limits(x=15)
-p <- p + geom_hline(yintercept = 0, color = "grey")
-p <- p + geom_vline(xintercept = 0, color = "grey")
-p <- p + drawline(sevd, size = 2, color = "grey")
-p <- p + drawline(ievd, size = 2, color = "grey")
+p <- p + geom_hline(yintercept = 0, size = axis_line_size, color = "grey")
+p <- p + geom_vline(xintercept = 0, size = axis_line_size, color = "grey")
+p <- p + drawline(sevd, size = ev_line_size, color = "grey")
+p <- p + drawline(ievd, size = ev_line_size, color = "grey")
 p <- p + labs(x = expression(S - bar(S)), y = expression(I - bar(I)))
 p <- p + geom_point(data = traj, aes(x = S, y = I))
 p <- p + geom_path(data = traj, aes(x = S, y = I), 
@@ -517,21 +525,44 @@ p <- p + geom_path(data = traj, aes(x = S, y = I),
 p <- p + geom_text(data = sevd, aes(x = x2, y = y2), 
                    label = "h[1] %*% (list(1, 0))", 
                    hjust = "center", nudge_x = 0, nudge_y = 1, parse = TRUE)
-p <- p + coord_fixed(clip = 'off')
+p <- p + coord_cartesian(clip = "off")
 pemerg_dia  <- p + geom_text(data = ievd, aes(x = x2, y = y2), 
                   label = "h[2] %*% (list(Gamma * x, Gamma * (1 - x) - mu))",
                   hjust = "center", nudge_x = 0, nudge_y = 1, parse = TRUE)
 
-pemerg_dia
+p <- ggplot()
+p <- p + labs(x = "time", y = "I")
+p <- p + geom_hline(yintercept = equil$I * Nequil, color = "grey", 
+                    size = axis_line_size)
+p <- p + geom_point(data = traj2, aes(x = t, y = Iorig))
+p <- p + geom_path(data = traj2, aes(x = t, y = Iorig), 
+                   col = "orange", arrow = grid::arrow(), lineend = "round")
+p <- p + coord_cartesian(clip = "off")
+pemerg_dyn_I <- p
+
+p <- ggplot()
+p <- p + labs(x = "time", y = "S")
+p <- p + geom_hline(yintercept = equil$S * Nequil, color = "grey", 
+                    size = axis_line_size)
+p <- p + geom_point(data = traj2, aes(x = t, y = Sorig))
+p <- p + geom_path(data = traj2, aes(x = t, y = Sorig), 
+                   col = "orange", arrow = grid::arrow(), lineend = "round")
+p <- p + coord_cartesian(clip = "off")
+pemerg_dyn_S <- p
+
+pemerg <- cowplot::plot_grid(pemerg_dia, pemerg_dyn_S, pemerg_dyn_I, 
+                             labels = "AUTO", nrow = 3)
+
+pemerg
 ```
 
 ![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-6-1.png)
 
 ```r
-## save as png because mu turns into infinity symbol in pdf output
-ggsave("emerge_eigenvector_diagram.png", plot = pemerg_dia, 
-       width = 90, height = 50, units = "mm")
+ggsave("emergence_diagrams.png", plot = pemerg, 
+       width = 90, height = 150, units = "mm")
 ```
+
 
 ## Diagram for elimination
 
@@ -560,6 +591,11 @@ pe <-  0.5 * 16 / 17
 traje_times <- seq(0, 2.5, by = 1 / 52)
 traje <- calc_entraj(times = traje_times, p = pe)
 
+equil_end <- EndemicEquilSIR(p = pe, gamma = 365 / 13, mu = 1 / 50, R0 = 17, 
+                             eta = 0)
+traje2 <- traje %>% mutate(Sorig = S + equil_end$S * 1e7, 
+                           Iorig = I + equil_end$I * 1e7)
+
 drawline <- function(df, ...){
   geom_segment(data = df, aes(x = x1, xend = x2, y = y1, yend = y2), 
                arrow = grid::arrow(), lineend = "round", ...)
@@ -585,15 +621,14 @@ iamp <- cbind(data.frame(x1 = 0, y1 = 0), iamp_targ)
 samp <- cbind(data.frame(x1 = 0, y1 = 0), samp_targ)
 
 p <- ggplot()
-p <- p + drawline(samp, size = 2, color = "grey")
-p <- p + drawline(iamp, size = 2, color = "grey")
-p <- p + geom_hline(yintercept = 0, color = "grey")
-p <- p + geom_vline(xintercept = 0, color = "grey")
+p <- p + drawline(samp, size = ev_line_size, color = "grey")
+p <- p + drawline(iamp, size = ev_line_size, color = "grey")
+p <- p + geom_hline(yintercept = 0, size = axis_line_size, color = "grey")
+p <- p + geom_vline(xintercept = 0, size = axis_line_size, color = "grey")
 p <- p + labs(x = expression(S - bar(S)), y = expression(I - bar(I)))
 p <- p + geom_point(data = traje, aes(x = S, y = I))
 p <- p + geom_path(data = traje, aes(x = S, y = I), 
                    col = "orange", arrow = grid::arrow(), lineend = "round")
-
 
 p <- p + geom_label(data = samp, aes(x = x2 / 2, y = y2),
                     label = "h[3] * sqrt(frac(Gamma, mu * (x - 1)))",
@@ -602,17 +637,36 @@ p <- p + geom_label(data = iamp, aes(x = x2 , y = y2 / 2),
                     label = "h[3]",
                     hjust = "center", parse = TRUE)
 pelim_dia <- p
-pelim_dia
+
+p <- ggplot()
+p <- p + labs(x = "time", y = "S")
+p <- p + geom_hline(yintercept = equil_end$S * Nequil, 
+                    size = axis_line_size, color = "grey")
+p <- p + geom_point(data = traje2, aes(x = t, y = Sorig))
+p <- p + geom_path(data = traje2, aes(x = t, y = Sorig), 
+                   col = "orange", arrow = grid::arrow(), lineend = "round")
+pelim_dyn_S <- p 
+
+p <- ggplot()
+p <- p + labs(x = "time", y = "I")
+p <- p + geom_hline(yintercept = equil_end$I * Nequil, 
+                    size = axis_line_size, color = "grey")
+p <- p + geom_point(data = traje2, aes(x = t, y = Iorig))
+p <- p + geom_path(data = traje2, aes(x = t, y = Iorig), 
+                   col = "orange", arrow = grid::arrow(), lineend = "round")
+pelim_dyn_I <- p
+
+pelim <- cowplot::plot_grid(pelim_dia, pelim_dyn_S, pelim_dyn_I,  
+                             labels = "AUTO", nrow = 3)
+pelim
 ```
 
 ![plot of chunk unnamed-chunk-7](figure/unnamed-chunk-7-1.png)
 
 ```r
-## save as png because mu turns into infinity symbol in pdf output
-ggsave("elim_eigenvector_diagram.png", plot = pelim_dia, 
-       width = 90, height = 80, units = "mm")
+ggsave("elim_diagrams.png", plot = pelim, 
+       width = 90, height = 150, units = "mm")
 ```
-
 
 
 ## Emergence
