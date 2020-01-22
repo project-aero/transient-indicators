@@ -1,5 +1,7 @@
 # transient-indicators
 
+[![DOI](https://zenodo.org/badge/235404395.svg)](https://zenodo.org/badge/latestdoi/235404395)
+
 These files are available to reproduce the results for the manuscript
 "Transient indicators of tipping points in infectious diseases." Some
 of the results can be reproduced using the Mathematica Notebook, and
