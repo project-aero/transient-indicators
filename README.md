@@ -14,4 +14,4 @@ already built image has also been pushed to Docker Hub. The bash
 script `run-simulations.sh` could be used to run the R markdown
 notebook with that image using podman. The directory
 `example-output-2020-01-22` contains files produced by running that
-script. Producing them took about 75 minutes using 8 2.1GHz cores.
+script. Producing them took about 75 minutes using eight 2.1GHz cores.
