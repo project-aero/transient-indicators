@@ -14,4 +14,4 @@ already built image has also been pushed to Docker Hub. The bash
 scripts `run-simulations.sh`, `run-measles-analysis.sh`, and `run-pertussis-analysis.sh` could be used to run the R markdown
 notebook with that image using podman. The directory
 `example-output-2020-06-26` contains files produced by running those
-script. Producing them took about 90 minutes using eight 2.1GHz cores.
+script. Producing them took about 90 minutes using eight 3.47GHz cores.
