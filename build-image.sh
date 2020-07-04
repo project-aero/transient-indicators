@@ -1,3 +1,3 @@
 #!/usr/bin/env bash
 
-podman build -t eamon/2019transients:v20200102 .
+podman build -t eamon/2019transients:v20200626 .

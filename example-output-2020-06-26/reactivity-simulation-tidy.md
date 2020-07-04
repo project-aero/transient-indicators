@@ -7,18 +7,38 @@ output:
 
 ## Environment setup
 
-```{r}
+
+```r
 library(spaero)
 library(tidyverse)
+```
+
+```
+## ── Attaching packages ─────────────────────────────────────── tidyverse 1.3.0 ──
+```
+
+```
+## ✔ ggplot2 3.2.1     ✔ purrr   0.3.3
+## ✔ tibble  2.1.3     ✔ dplyr   0.8.3
+## ✔ tidyr   1.0.0     ✔ stringr 1.4.0
+## ✔ readr   1.3.1     ✔ forcats 0.4.0
+```
+
+```
+## ── Conflicts ────────────────────────────────────────── tidyverse_conflicts() ──
+## ✖ dplyr::filter() masks stats::filter()
+## ✖ dplyr::lag()    masks stats::lag()
+```
+
+```r
 set.seed(1)
 theme_set(new = theme_minimal())
-
 ```
 
 # Emergence
 
-```{r}
 
+```r
 gen_outbreak_sim <- function(R0 = 17, N_0 = 1e2, eta = 0, tstop = 2, 
                              p_t = 0, tstep = 1 / 365, p = 0, dpdt = 0, 
                              d = 0.02, ifrac0 = 1 / N_0, 
@@ -76,7 +96,13 @@ simdata <- parallel::mclapply(simus, run_sims, nreps = nreplicates,
                               mc.cores = 2) %>% 
   bind_rows(.id = "recovery")
 tictoc::toc()
+```
 
+```
+## Emergence simulations: 150.84 sec elapsed
+```
+
+```r
 linear_model <- function(df){
   ind1 <- which.max(df$totcases > 0)
   ind2 <- which.max(df$totcases)
@@ -127,12 +153,15 @@ foo <- simdata %>% group_by(.id, p, recovery) %>%
   mutate(ews = purrr::map(simdf, stats_calc)) %>%
   unnest(ews) %>%
   filter(!is.na(variance))
+```
 
+```
+## Warning: `.key` is deprecated
 ```
 
 
-```{r}
 
+```r
 psim <-
   foo %>%
   select(-lmod,-stat,-maxamp) %>%
@@ -147,14 +176,17 @@ psim <-
   labs(x = "Day", y = "Number of cases")
 
 ggsave("emergence_trajectories.png", psim, width = 190, units = "mm")
+```
 
+```
+## Saving 190 x 178 mm image
 ```
 
 
 
 
-```{r}
 
+```r
 foobar <- foo %>% select(-simdf, -lmod) %>% 
   gather("stat", "maxamp", "mean", "variance", "autocorrelation", 
          key = "indicator", value = "value")
@@ -163,8 +195,26 @@ foobar %>% ggplot(aes(x = value, color = p)) + scale_x_log10() +
   geom_freqpoly() + facet_grid(recovery ~ indicator, scales = "free")
 ```
 
-```{r}
+```
+## Warning in self$trans$transform(x): NaNs produced
+```
 
+```
+## Warning: Transformation introduced infinite values in continuous x-axis
+```
+
+```
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+```
+
+```
+## Warning: Removed 2632 rows containing non-finite values (stat_bin).
+```
+
+![plot of chunk unnamed-chunk-4](figure/unnamed-chunk-4-1.png)
+
+
+```r
 p_emerg_poly <- 
   foobar %>% 
   mutate(recovery_pretty = recode(recovery, meas = "Measles", pert = "Pertussis"),
@@ -187,13 +237,34 @@ p_emerg_poly <-
   theme(axis.text.x = element_text(angle = 90))
 
 p_emerg_poly
+```
 
+```
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+```
+
+```
+## Warning: Removed 160 rows containing non-finite values (stat_bin).
+```
+
+![plot of chunk unnamed-chunk-5](figure/unnamed-chunk-5-1.png)
+
+```r
 ggsave("emergence_distributions.png", p_emerg_poly, width = 190, units = "mm")
+```
 
+```
+## Saving 190 x 178 mm image
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+```
+
+```
+## Warning: Removed 160 rows containing non-finite values (stat_bin).
 ```
 
 
-```{r}
+
+```r
 calc_auc <- function(predictions, is_null){
     r <- rank(predictions)
     r1 <- sum(r[!is_null])
@@ -224,13 +295,14 @@ taba <- bind_rows(tabs)
 taba %>% ggplot(aes(x = indicator, y = auc, fill = recovery)) + 
   geom_col(position = "dodge") + 
   facet_grid(ptest ~ pnull, labeller = label_bquote(p[1] == .(ptest), p[0] == .(pnull))) 
-
 ```
+
+![plot of chunk unnamed-chunk-6](figure/unnamed-chunk-6-1.png)
 
 # Elimination
 
-```{r}
 
+```r
 EndemicEquilSIR <- function(beta = (R0 * (mu + gamma)), eta = 17 / 1e6,
                             gamma = 365 / 13, mu = 1 / 50, p = 0,  R0 = 17,
                             verbose = FALSE) {
@@ -291,8 +363,8 @@ gen_sim_step <- function(R0 = 17, N_0 = 1e6, eta = 365 / N_0, tstep = 1 / 52,
 }
 ```
 
-```{r run_sims}
 
+```r
 gen_wrap <- function(pstep, g = 326 / 13){
   tdp1 <- 10
   tdp2 <- 20
@@ -333,12 +405,15 @@ simdata_end <- parallel::mclapply(simus_end, run_sims_end,
                                   mc.cores = 2) %>% 
   bind_rows(.id = "recovery")
 tictoc::toc()
+```
 
+```
+## elimination simulations: 3719.006 sec elapsed
 ```
 
 
-```{r}
 
+```r
 psim_end <-
   simdata_end %>% filter(time > 13 & time < 27) %>%
   filter(as.integer(.id) < 3) %>%
@@ -350,12 +425,20 @@ psim_end <-
   labs(x = "Years after change in vaccine uptake, p", y = "Number of cases")
 
 psim_end
-ggsave("elimination_trajectories.png", psim_end, width = 190, units = "mm")
-
 ```
 
-```{r}
+![plot of chunk unnamed-chunk-8](figure/unnamed-chunk-8-1.png)
 
+```r
+ggsave("elimination_trajectories.png", psim_end, width = 190, units = "mm")
+```
+
+```
+## Saving 190 x 178 mm image
+```
+
+
+```r
 outsm <- simdata_end %>% filter(time > 13 & time < 27 & pstep < 0.8) 
 
 smoothing_model <- function(df){
@@ -416,7 +499,15 @@ tmp <- outsm %>%
   nest(.key = "simdf") %>%
   mutate(simdf = purrr::map(simdf, m_t_calc)) %>%
   mutate(ews = purrr::map(simdf, stats_calc_end))
+```
 
+```
+## Warning: `.key` is deprecated
+
+## Warning: `.key` is deprecated
+```
+
+```r
 ## Checking smoothing span
 
 tmp %>% filter(.id == 1) %>% unnest(simdf) %>% 
@@ -424,7 +515,19 @@ tmp %>% filter(.id == 1) %>% unnest(simdf) %>%
   geom_line(aes(y = S), col = "red") + 
   geom_point(aes(x = time, y = Shat_raw), alpha = 0.1) + 
   facet_grid(pstep ~ recovery)
+```
 
+```
+## Warning: Removed 3 rows containing missing values (geom_path).
+```
+
+```
+## Warning: Removed 20 rows containing missing values (geom_point).
+```
+
+![plot of chunk unnamed-chunk-9](figure/unnamed-chunk-9-1.png)
+
+```r
 react_end_calc <- function(df, bandfrac = 0.05){
   eps <- diff(range(df$o_t, na.rm = TRUE)) * bandfrac
   test <- abs(df$o_t) < eps
@@ -454,10 +557,22 @@ tmp3 <- tmp2 %>%
 
 tmp3 %>% ggplot(aes(x = diff_ind, fill = recovery)) + geom_histogram() + 
   facet_grid(pstep ~ indicator, scales = "free_x")
+```
 
+```
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+```
+
+![plot of chunk unnamed-chunk-9](figure/unnamed-chunk-9-2.png)
+
+```r
 tmp3 %>% ggplot(aes(x = diff_ind > 0, fill = recovery)) + geom_bar() + 
   facet_grid(pstep ~ indicator)
+```
 
+![plot of chunk unnamed-chunk-9](figure/unnamed-chunk-9-3.png)
+
+```r
 np2 <- length(pstep_vec)
 tabs2 <- list()
 n <- 1
@@ -476,11 +591,12 @@ tab2a <- bind_rows(tabs2)
   
 tab2a %>% ggplot(aes(x = as.factor(pstep_test), y = auc, fill = recovery)) + 
   geom_col(position = "dodge") + facet_grid(.~indicator) 
-
 ```
 
-```{r}
+![plot of chunk unnamed-chunk-9](figure/unnamed-chunk-9-4.png)
 
+
+```r
 p_elim_poly <-
   tmp3 %>%
   mutate(
@@ -508,25 +624,36 @@ p_elim_poly <-
   theme(axis.text.x = element_text(angle = 90))
 
 p_elim_poly
+```
 
+```
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
+```
+
+![plot of chunk unnamed-chunk-10](figure/unnamed-chunk-10-1.png)
+
+```r
 ggsave("elimination_distributions.png", p_elim_poly, width = 190, units = "mm")
+```
 
+```
+## Saving 190 x 178 mm image
+## `stat_bin()` using `bins = 30`. Pick better value with `binwidth`.
 ```
 
 
 # Additional figures for the paper
 
-```{r}
 
+```r
 theme_set(new = theme_minimal())
-
 ```
 
 
 ## Diagram for emergence
 
-```{r}
 
+```r
 DiseaseFreeJacSIR <- function(gamma = 365 / 13, mu = 1 / 50, p = 0,  R0 = 17,
                           x = R0 * (1 - p), Gamma = gamma + mu){
   rbind(c(-mu , - Gamma * x),
@@ -626,16 +753,20 @@ pemerg <- cowplot::plot_grid(pemerg_dia, pemerg_dyn_S, pemerg_dyn_I,
                              labels = "AUTO", nrow = 3)
 
 pemerg
+```
+
+![plot of chunk unnamed-chunk-12](figure/unnamed-chunk-12-1.png)
+
+```r
 ggsave("emergence_diagrams.png", plot = pemerg, 
        width = 90, height = 150, units = "mm")
-
 ```
 
 
 ## Diagram for elimination
 
-```{r}
 
+```r
 EndemicJacSIR <- function(gamma = 365 / 13, mu = 1 / 50, p = 0,  R0 = 17,
                           x = R0 * (1 - p), Gamma = gamma + mu){
   rbind(c(-mu * x, - Gamma),
@@ -727,6 +858,11 @@ pelim_dyn_I <- p
 pelim <- cowplot::plot_grid(pelim_dia, pelim_dyn_S, pelim_dyn_I,  
                              labels = "AUTO", nrow = 3)
 pelim
+```
+
+![plot of chunk unnamed-chunk-13](figure/unnamed-chunk-13-1.png)
+
+```r
 ggsave("elim_diagrams.png", plot = pelim, 
        width = 90, height = 150, units = "mm")
 ```
@@ -734,9 +870,8 @@ ggsave("elim_diagrams.png", plot = pelim,
 
 ## Emergence
 
-```{r}
 
-
+```r
 pemerg <- taba %>% mutate(indicator_nice =
                             factor(
                               indicator,
@@ -770,15 +905,23 @@ pemerg <- taba %>% mutate(indicator_nice =
   coord_flip()
 
 pemerg
+```
 
+![plot of chunk unnamed-chunk-14](figure/unnamed-chunk-14-1.png)
+
+```r
 ggsave("emergence_sims_auc.pdf", pemerg, width = 190, units = "mm")
+```
+
+```
+## Saving 190 x 178 mm image
 ```
 
 
 ## Elimination
 
-```{r}
 
+```r
 pelim <- tab2a %>% mutate(indlab = recode(indicator, 
                                           autocorrelation = "Autocorr.",
                                           variance = "Variance",
@@ -798,8 +941,15 @@ pelim <- tab2a %>% mutate(indlab = recode(indicator,
   theme(axis.text.x = element_text(angle = 90))
 
 pelim
+```
 
+![plot of chunk unnamed-chunk-15](figure/unnamed-chunk-15-1.png)
+
+```r
 ggsave("elimination_sims_auc.pdf", pelim, width = 90, 
        units = "mm")
+```
 
+```
+## Saving 90 x 178 mm image
 ```
