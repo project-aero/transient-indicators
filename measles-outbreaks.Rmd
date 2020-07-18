@@ -126,6 +126,10 @@ react_stat <- function(mod){
   coef(mod)["obtime"]
 }
 
+intercept <- function(mod){
+  coef(mod)["(Intercept)"]
+}
+
 max_amp <- function(df){
   max(df$totcases)
 }
@@ -138,7 +142,8 @@ rdf <- odf %>%
   nest() %>%
   mutate(lmod = purrr::map(data, linear_model)) %>%
   mutate(stat = purrr::map_dbl(lmod, react_stat)) %>%
-  mutate(maxamp = purrr::map_dbl(data, max_amp))
+  mutate(maxamp = purrr::map_dbl(data, max_amp)) %>%
+  mutate(intercept = purrr::map_dbl(lmod, intercept))
 
 rdf
 
@@ -150,17 +155,19 @@ The California outbreak has greater reactivity and maximum amplification.
 
 ```{r}
 
-theme_set(new = theme_minimal())
+theme_set(new = theme_classic())
 
 pmeasles <-
   rdf %>% unnest(data) %>% ggplot(aes(x = obtime, y = totcases, color = outbreak)) +
-  geom_step() +
   scale_color_manual(
     values = c("#999999", "#E69F00"),
     breaks = c("ca2014", "mn2017"),
     labels = c("California December 2014", "Minnesota April 2017"),
     name = "Outbreak:"
   ) +
+  geom_hline(yintercept = rdf$maxamp, color = "grey", size = 1 / 5) +
+  geom_abline(slope = rdf$stat, intercept = rdf$intercept, color = "grey", size = 1 / 5) + 
+  geom_step() +
   theme(legend.position = "top") +
   labs(x = "Days since first case", y = "Number of measles cases") +
   guides(color=guide_legend(nrow=2,byrow=TRUE))
