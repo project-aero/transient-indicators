@@ -168,12 +168,13 @@ foobar %>% ggplot(aes(x = value, color = p)) + scale_x_log10() +
 p_emerg_poly <- 
   foobar %>% 
   mutate(recovery_pretty = recode(recovery, meas = "Measles", pert = "Pertussis"),
-         indicator_pretty = recode(indicator, 
+         indicator_pretty = recode_factor(indicator, 
+                                   mean="Mean",
+                                   variance="Variance",
                                    autocorrelation="Autocorr.",
                                    maxamp="Max. Amp.",
-                                   mean="Mean",
-                                   stat="Reactivity",
-                                   variance="Variance")) %>%
+                                   stat="Reactivity"
+                                   )) %>%
   ggplot(aes(x = value, color = recovery)) + 
   scale_x_continuous() + 
   geom_freqpoly() + 
@@ -484,13 +485,13 @@ tab2a %>% ggplot(aes(x = as.factor(pstep_test), y = auc, fill = recovery)) +
 p_elim_poly <-
   tmp3 %>%
   mutate(
-    indicator_pretty = recode(
+    indicator_pretty = recode_factor(
       indicator,
+      mean = "-Mean",
+      variance = "Variance",
       autocorrelation = "Autocorr.",
       max_amp_end = "Max. Amp.",
-      mean = "-Mean",
-      react_end = "Reactivity",
-      variance = "Variance"
+      react_end = "Reactivity"
     )
   ) %>%
   ggplot(aes(x = diff_ind, colour = recovery)) +
@@ -740,14 +741,17 @@ ggsave("elim_diagrams.png", plot = pelim,
 pemerg <- taba %>% mutate(indicator_nice =
                             factor(
                               indicator,
-                              levels = c("autocorrelation", "maxamp", "mean",
-                                         "stat", "variance"),
+                              levels = c("mean", 
+                                         "variance", 
+                                         "autocorrelation", 
+                                         "maxamp",
+                                         "stat"),
                               labels = c(
+                                "Mean",
+                                "Variance",
                                 "Autocorrelation",
                                 "Max. amplification",
-                                "Mean",
-                                "Reactivity",
-                                "Variance"
+                                "Reactivity"
                               )
                             )) %>%
   ggplot(aes(
@@ -779,12 +783,13 @@ ggsave("emergence_sims_auc.pdf", pemerg, width = 190, units = "mm")
 
 ```{r}
 
-pelim <- tab2a %>% mutate(indlab = recode(indicator, 
-                                          autocorrelation = "Autocorr.",
-                                          variance = "Variance",
-                                          mean = "-Mean",
-                                          react_end = "Reactiv.", 
-                                          max_amp_end = "Max.\namp.")) %>% 
+pelim <- tab2a %>% 
+  mutate(indlab = recode_factor(indicator,
+                                mean = "-Mean",
+                                variance = "Variance",
+                                autocorrelation = "Autocorr.",
+                                max_amp_end = "Max.\namp.",
+                                react_end = "Reactiv.")) %>% 
   ggplot(aes(x = as.factor(pstep_test), y = auc, fill = recovery)) + 
   geom_col(position = "dodge") + 
   scale_fill_manual(values=c("#999999", "#E69F00"), 
